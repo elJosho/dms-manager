@@ -17,6 +17,13 @@ var resumeCmd = &cobra.Command{
 You can specify multiple task ARNs or task names as arguments.
 Tasks will be resumed concurrently for faster execution.
 
+Wildcards are supported for task names (e.g. "prod-*", "*-database").
+Note: When using wildcards, you MUST quote the argument to prevent shell expansion.
+
+Examples:
+  dms-manager resume task1 task2
+  dms-manager resume "*-database"
+
 This uses the resume-processing start type, which resumes replication 
 from where it was stopped.`,
 	Args: cobra.MinimumNArgs(1),

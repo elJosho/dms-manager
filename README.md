@@ -147,6 +147,30 @@ Start types:
 ./dms-manager reload task1 task2
 ```
 
+#### Using Wildcards
+
+You can use `*` or `all` to operate on all tasks. **Important**: Use quotes to prevent shell expansion.
+
+```bash
+# Start all tasks
+./dms-manager start '*'
+
+# Stop all tasks
+./dms-manager stop '*'
+
+# Stop tasks matching a pattern
+./dms-manager stop '*-database'
+./dms-manager stop 'prod-*'
+
+# Resume all tasks
+./dms-manager resume all
+
+# Reload all tasks
+./dms-manager reload '*'
+```
+
+> **Note**: Always quote the wildcard (`'*'` or `"*"`) to prevent your shell from expanding it to filenames in the current directory.
+
 ### Interactive TUI
 
 Launch the interactive terminal interface:

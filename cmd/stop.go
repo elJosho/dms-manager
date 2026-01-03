@@ -14,7 +14,15 @@ var stopCmd = &cobra.Command{
 	Long: `Stop one or more DMS replication tasks in parallel.
 	
 You can specify multiple task ARNs or task names as arguments.
-Tasks will be stopped concurrently for faster execution.`,
+Tasks will be stopped concurrently for faster execution.
+
+Wildcards are supported for task names (e.g. "prod-*", "*-database").
+Note: When using wildcards, you MUST quote the argument to prevent shell expansion.
+
+Examples:
+  dms-manager stop task1 task2
+  dms-manager stop "*-database"
+  dms-manager stop "prod-*"`,
 	Args: cobra.MinimumNArgs(1),
 	Run:  runStop,
 }
