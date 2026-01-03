@@ -387,7 +387,7 @@ You can test the DMS manager locally without AWS credentials using the included 
 
 ```bash
 # Terminal 1: Start mock server
-cd test/mock-server && go run main.go
+make mock-start
 
 # Terminal 2: Test
 source test/mock-env.sh
@@ -398,7 +398,17 @@ source test/mock-env.sh
 ### One-Command Test
 
 ```bash
+# Using make
+make mock-start && source test/mock-env.sh && make test
+
+# Or using the test script
 ./test/quick-test.sh
+```
+
+### Stop Mock Server
+
+```bash
+make mock-stop
 ```
 
 ### See [test/README.md](test/README.md) for complete testing documentation.
@@ -428,16 +438,51 @@ Ensure your AWS user/role has the necessary DMS permissions:
 
 ## Development
 
+### Makefile Commands
+
+Run `make help` to see all available commands:
+
+| Command | Description |
+|---------|-------------|
+| `make help` | Show all available make targets |
+| `make build` | Build for current platform |
+| `make build-all` | Build for all platforms (Linux, macOS, Windows) |
+| `make build-linux` | Build for Linux amd64 |
+| `make build-linux-arm` | Build for Linux arm64 |
+| `make build-macos` | Build for macOS Intel (amd64) |
+| `make build-macos-arm` | Build for macOS Apple Silicon (arm64) |
+| `make build-windows` | Build for Windows amd64 |
+| `make build-windows-arm` | Build for Windows arm64 |
+| `make clean` | Remove build artifacts |
+| `make test` | Run quick test against mock server |
+| `make mock-server` | Build the mock DMS server binary |
+| `make mock-start` | Start mock server in background |
+| `make mock-stop` | Stop mock server |
+
 ### Building
 
 ```bash
+# Build for current platform
+make build
+
+# Build for all platforms
+make build-all
+
+# Or build directly with Go
 go build -o dms-manager
 ```
 
 ### Testing
 
 ```bash
+# Run Go tests
 go test ./...
+
+# Test with mock server
+make mock-start      # Start mock server
+source test/mock-env.sh
+make test            # Run quick test
+make mock-stop       # Stop mock server
 ```
 
 ### Dependencies
