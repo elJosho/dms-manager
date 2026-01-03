@@ -23,13 +23,48 @@ A powerful command-line tool for managing AWS Database Migration Service (DMS) r
 ```bash
 git clone <repository-url>
 cd dms-manager
-go build -o dms-manager
+make build
 ```
 
 Or install directly:
 
 ```bash
 go install github.com/joshw/dms-manager@latest
+```
+
+### Cross-Platform Builds
+
+Build executables for different operating systems and architectures:
+
+```bash
+# Build for current platform
+make build
+
+# Build for specific platforms
+make build-linux        # Linux amd64
+make build-linux-arm    # Linux arm64
+make build-macos        # macOS Intel (amd64)
+make build-macos-arm    # macOS Apple Silicon (arm64)
+make build-windows      # Windows amd64
+make build-windows-arm  # Windows arm64
+
+# Build for ALL platforms at once
+make build-all
+
+# Clean build artifacts
+make clean
+```
+
+All cross-platform binaries are output to the `build/` directory:
+
+```
+build/
+├── dms-manager-linux-amd64
+├── dms-manager-linux-arm64
+├── dms-manager-darwin-amd64
+├── dms-manager-darwin-arm64
+├── dms-manager-windows-amd64.exe
+└── dms-manager-windows-arm64.exe
 ```
 
 ## AWS Configuration
