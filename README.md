@@ -177,6 +177,122 @@ Launch the interactive terminal interface:
 ./dms-manager list --profile dev --region eu-west-1
 ```
 
+## Example Output
+
+### CLI List Command
+
+```
+Region: us-east-1
+Profile: production
+
+NAME                          STATUS     TYPE              ARN
+────                          ──────     ────              ───
+orders-replication            running    full-load-and-cdc arn:aws:dms:us-east-1:123456789:task:ABC123
+users-sync                    stopped    cdc               arn:aws:dms:us-east-1:123456789:task:DEF456
+inventory-migration           running    full-load         arn:aws:dms:us-east-1:123456789:task:GHI789
+
+Total tasks: 3
+```
+
+### CLI Describe Command
+
+```
+Task: orders-replication
+ARN: arn:aws:dms:us-east-1:123456789:task:ABC123
+Status: running
+Migration Type: full-load-and-cdc
+
+Endpoints:
+  Replication Instance: arn:aws:dms:us-east-1:123456789:rep:INSTANCE1
+  Source: arn:aws:dms:us-east-1:123456789:endpoint:SOURCE1
+  Target: arn:aws:dms:us-east-1:123456789:endpoint:TARGET1
+
+Created At: 2025-01-15 10:30:00
+Started At: 2025-01-15 10:35:22
+
+Statistics:
+  Full Load Progress: 100%
+  Tables Loaded: 45
+  Tables Loading: 0
+  Tables Queued: 0
+  Tables Errored: 0
+  Elapsed Time: 2h 15m
+```
+
+### CLI List with Stats
+
+```
+Region: us-east-1
+
+Task: orders-replication
+Status: running
+Type: full-load-and-cdc
+ARN: arn:aws:dms:us-east-1:123456789:task:ABC123
+
+Statistics:
+  Full Load Progress: 100%
+  Tables Loaded: 45
+  Tables Loading: 0
+  Tables Queued: 0
+  Tables Errored: 0
+  Elapsed Time: 2h 15m
+
+────────────────────────────────────────────────────────────────────────────────
+Task: users-sync
+Status: stopped
+Type: cdc
+ARN: arn:aws:dms:us-east-1:123456789:task:DEF456
+
+Statistics:
+  Full Load Progress: 100%
+  Tables Loaded: 12
+  Tables Loading: 0
+  Tables Queued: 0
+  Tables Errored: 0
+  Stop Reason: Stop Reason FULL_LOAD_ONLY_FINISHED
+
+Total tasks: 2
+```
+
+### Interactive TUI
+
+```
+AWS DMS Tasks - us-east-1 (Profile: production)
+
+→ [✓] orders-replication - running (full-load-and-cdc)
+  [ ] users-sync - stopped (cdc)
+  [ ] inventory-migration - running (full-load)
+
+[↑/k] up • [↓/j] down • [space] select • [enter] details • [s] start • [x] stop • [r] resume • [l] reload
+[c] clear • [f] refresh • [a] auto-refresh: on • [q] quit
+```
+
+### TUI Task Details View
+
+```
+Task Details
+
+Name: orders-replication
+Status: running
+Type: full-load-and-cdc
+ARN: arn:aws:dms:us-east-1:123456789:task:ABC123
+
+Endpoints:
+  Source: arn:aws:dms:us-east-1:123456789:endpoint:SOURCE1
+  Target: arn:aws:dms:us-east-1:123456789:endpoint:TARGET1
+  Instance: arn:aws:dms:us-east-1:123456789:rep:INSTANCE1
+
+Created: 2025-01-15 10:30:00
+Started: 2025-01-15 10:35:22
+
+Statistics:
+  Progress: 100%
+  Tables - Loaded: 45, Loading: 0, Queued: 0, Errored: 0
+  Elapsed: 2h 15m
+
+Press [t] extended stats: off • [T] table stats • [ESC] back
+```
+
 ## Architecture
 
 ```
