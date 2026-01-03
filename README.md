@@ -1,0 +1,306 @@
+# AWS DMS Manager
+
+A powerful command-line tool for managing AWS Database Migration Service (DMS) replication tasks with both CLI and interactive TUI interfaces.
+
+## Features
+
+- 🚀 **Multi-interface**: Both CLI commands and interactive TUI
+- 🔄 **Parallel Operations**: Control multiple tasks simultaneously
+- 📊 **Real-time Updates**: Auto-refresh task status in TUI
+- 🎯 **Profile Support**: Switch between different AWS profiles
+- ⚡ **Fast Execution**: Parallel processing for bulk operations
+- 🎨 **Beautiful TUI**: Color-coded status and intuitive navigation
+
+## Installation
+
+### Prerequisites
+
+- Go 1.23 or higher
+- AWS credentials configured (via `~/.aws/credentials` or environment variables)
+
+### Build from Source
+
+```bash
+git clone <repository-url>
+cd dms-manager
+go build -o dms-manager
+```
+
+Or install directly:
+
+```bash
+go install github.com/joshw/dms-manager@latest
+```
+
+## AWS Configuration
+
+Ensure you have AWS credentials configured. You can set them up using:
+
+```bash
+aws configure
+```
+
+Or manually create `~/.aws/credentials`:
+
+```ini
+[default]
+aws_access_key_id = YOUR_ACCESS_KEY
+aws_secret_access_key = YOUR_SECRET_KEY
+
+[profile staging]
+aws_access_key_id = STAGING_ACCESS_KEY
+aws_secret_access_key = STAGING_SECRET_KEY
+```
+
+## Usage
+
+### CLI Commands
+
+#### List all tasks
+
+```bash
+./dms-manager list
+./dms-manager list --profile staging --region us-west-2
+```
+
+#### Describe task details
+
+```bash
+./dms-manager describe <task-name-or-arn>
+./dms-manager describe task1 task2 task3
+```
+
+#### Start tasks
+
+```bash
+# Start a single task
+./dms-manager start <task-name-or-arn>
+
+# Start multiple tasks in parallel
+./dms-manager start task1 task2 task3
+
+# Start with specific type
+./dms-manager start task1 --type resume-processing
+```
+
+Start types:
+- `start-replication` (default) - Start fresh replication
+- `resume-processing` - Resume from where it stopped
+- `reload-target` - Reload target tables
+
+#### Stop tasks
+
+```bash
+# Stop a single task
+./dms-manager stop <task-name-or-arn>
+
+# Stop multiple tasks in parallel
+./dms-manager stop task1 task2 task3
+```
+
+#### Resume tasks
+
+```bash
+# Resume tasks that were stopped (uses resume-processing)
+./dms-manager resume task1 task2
+```
+
+#### Reload tasks
+
+```bash
+# Reload tasks (stop then start with reload-target)
+./dms-manager reload task1 task2
+```
+
+### Interactive TUI
+
+Launch the interactive terminal interface:
+
+```bash
+./dms-manager tui
+./dms-manager tui --profile production --region us-east-1
+```
+
+#### TUI Keyboard Shortcuts
+
+| Key | Action |
+|-----|--------|
+| `↑/k` | Move up |
+| `↓/j` | Move down |
+| `Space` | Select/deselect task |
+| `Enter` | View task details |
+| `s` | Start selected tasks |
+| `x` | Stop selected tasks |
+| `r` | Resume selected tasks |
+| `l` | Reload selected tasks |
+| `c` | Clear all selections |
+| `f` | Manually refresh task list |
+| `a` | Toggle auto-refresh (default: on) |
+| `q` | Quit |
+
+### Global Flags
+
+- `--profile, -p` - AWS profile to use (default: default profile)
+- `--region, -r` - AWS region (default: from profile or `AWS_REGION`)
+
+## Examples
+
+### Working with Multiple Tasks
+
+```bash
+# List all tasks to see what's available
+./dms-manager list --profile production
+
+# Start multiple tasks at once
+./dms-manager start task-1 task-2 task-3 --profile production
+
+# Resume stopped tasks
+./dms-manager resume task-1 task-2 --profile production
+
+# Reload tasks (full reload)
+./dms-manager reload task-1 task-2 --profile production
+
+# Use the TUI for interactive management
+./dms-manager tui --profile production
+```
+
+### Cross-Profile Management
+
+```bash
+# Check staging tasks
+./dms-manager list --profile staging
+
+# Start production tasks
+./dms-manager start prod-task-1 --profile production
+
+# Use different regions
+./dms-manager list --profile dev --region eu-west-1
+```
+
+## Architecture
+
+```
+dms-manager/
+├── main.go                 # Application entry point
+├── cmd/                    # CLI commands
+│   ├── root.go            # Root command and global flags
+│   ├── list.go            # List tasks command
+│   ├── describe.go        # Describe tasks command
+│   ├── start.go           # Start tasks command
+│   ├── stop.go            # Stop tasks command
+│   ├── restart.go         # Restart tasks command
+│   ├── tui.go             # TUI launcher
+│   └── helpers.go         # Shared utilities
+├── pkg/dms/               # DMS client library
+│   ├── client.go          # AWS SDK wrapper
+│   ├── operations.go      # DMS operations
+│   └── types.go           # Type definitions
+└── internal/tui/          # TUI implementation
+    ├── model.go           # Bubble Tea model
+    ├── views.go           # View rendering
+    ├── commands.go        # Async commands
+    └── styles.go          # UI styling
+```
+
+## Features in Detail
+
+### Parallel Processing
+
+All multi-task operations (start, stop, restart) use Go goroutines to process tasks in parallel, significantly reducing execution time when managing multiple tasks.
+
+### Auto-Refresh
+
+In TUI mode, the task list automatically refreshes every 5 seconds to show real-time status updates. Toggle this feature with the `a` key.
+
+### Task Selection
+
+The TUI supports multi-selection:
+1. Use `Space` to select/deselect individual tasks
+2. Perform operations on all selected tasks
+3. Use `c` to clear selection
+4. If no tasks are selected, operations apply to the task under the cursor
+
+### Error Handling
+
+The application provides clear error messages and handles:
+- Network failures
+- Invalid credentials
+- Missing tasks
+- Partial failures in bulk operations
+
+## Testing with Mock Server
+
+You can test the DMS manager locally without AWS credentials using the included mock server.
+
+### Quick Start
+
+```bash
+# Terminal 1: Start mock server
+cd test/mock-server && go run main.go
+
+# Terminal 2: Test
+source test/mock-env.sh
+./dms-manager list
+./dms-manager tui
+```
+
+### One-Command Test
+
+```bash
+./test/quick-test.sh
+```
+
+### See [test/README.md](test/README.md) for complete testing documentation.
+
+## Troubleshooting
+
+### "No credentials found"
+
+Ensure AWS credentials are configured:
+```bash
+aws configure
+```
+
+### "Task not found"
+
+Verify the task name or ARN is correct:
+```bash
+./dms-manager list
+```
+
+### Permission Issues
+
+Ensure your AWS user/role has the necessary DMS permissions:
+- `dms:DescribeReplicationTasks`
+- `dms:StartReplicationTask`
+- `dms:StopReplicationTask`
+
+## Development
+
+### Building
+
+```bash
+go build -o dms-manager
+```
+
+### Testing
+
+```bash
+go test ./...
+```
+
+### Dependencies
+
+- AWS SDK for Go v2
+- Cobra (CLI framework)
+- Bubble Tea (TUI framework)
+- Bubbles (TUI components)
+- Lipgloss (TUI styling)
+
+## License
+
+MIT License
+
+## Contributing
+
+Contributions are welcome! Please feel free to submit a Pull Request.
