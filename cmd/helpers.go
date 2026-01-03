@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/joshw/dms-manager/pkg/dms"
+	"github.com/eljosho/dms-manager/pkg/dms"
 )
 
 // resolveTaskARNs converts a mix of ARNs and task names to ARNs

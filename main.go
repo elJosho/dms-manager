@@ -3,7 +3,7 @@ package main
 import (
 	"os"
 
-	"github.com/joshw/dms-manager/cmd"
+	"github.com/eljosho/dms-manager/cmd"
 )
 
 func main() {

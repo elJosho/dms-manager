@@ -6,7 +6,7 @@ import (
 
 	"github.com/charmbracelet/bubbles/spinner"
 	tea "github.com/charmbracelet/bubbletea"
-	"github.com/joshw/dms-manager/pkg/dms"
+	"github.com/eljosho/dms-manager/pkg/dms"
 )
 
 // View states

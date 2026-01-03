@@ -29,7 +29,7 @@ make build
 Or install directly:
 
 ```bash
-go install github.com/joshw/dms-manager@latest
+go install github.com/eljosho/dms-manager@latest
 ```
 
 ### Cross-Platform Builds

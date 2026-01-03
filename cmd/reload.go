@@ -5,7 +5,7 @@ import (
 	"fmt"
 
 	"github.com/aws/aws-sdk-go-v2/service/databasemigrationservice/types"
-	"github.com/joshw/dms-manager/pkg/dms"
+	"github.com/eljosho/dms-manager/pkg/dms"
 	"github.com/spf13/cobra"
 )
 

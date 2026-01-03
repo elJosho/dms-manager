@@ -1,4 +1,4 @@
-module github.com/joshw/dms-manager
+module github.com/eljosho/dms-manager
 
 go 1.24.4
 

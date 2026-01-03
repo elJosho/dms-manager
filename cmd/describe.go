@@ -8,8 +8,8 @@ import (
 	"text/tabwriter"
 
 	"github.com/charmbracelet/lipgloss"
-	"github.com/joshw/dms-manager/internal/tui"
-	"github.com/joshw/dms-manager/pkg/dms"
+	"github.com/eljosho/dms-manager/internal/tui"
+	"github.com/eljosho/dms-manager/pkg/dms"
 	"github.com/spf13/cobra"
 )
 

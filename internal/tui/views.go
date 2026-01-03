@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/joshw/dms-manager/pkg/dms"
+	"github.com/eljosho/dms-manager/pkg/dms"
 )
 
 // View renders the current view
