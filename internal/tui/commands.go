@@ -24,7 +24,7 @@ type errorMsg struct {
 	err error
 }
 
-const refreshInterval = 5 * time.Second
+const refreshInterval = 15 * time.Second
 
 // LoadTasksCmd loads tasks asynchronously
 func LoadTasksCmd(client *dms.Client) tea.Cmd {

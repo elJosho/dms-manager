@@ -97,15 +97,15 @@ func runDescribe(cmd *cobra.Command, args []string) {
 func printTaskDetails(task *dms.Task) {
 	// Task header
 	fmt.Printf("%s %s\n", tui.CLILabelStyle.Render("Task:"), tui.CLIPrimaryStyle.Render(task.Name))
-	fmt.Printf("%s %s\n", tui.CLILabelStyle.Render("ARN:"), tui.CLIMutedStyle.Render(task.ARN))
+	fmt.Printf("%s %s\n", tui.CLILabelStyle.Render("ARN:"), tui.CLIMutedStyle.Render(dms.TruncateARN(task.ARN, 60)))
 	fmt.Printf("%s %s\n", tui.CLILabelStyle.Render("Status:"), getDescribeStatusStyle(task.Status).Render(task.Status))
 	fmt.Printf("%s %s\n", tui.CLILabelStyle.Render("Migration Type:"), tui.CLIValueStyle.Render(task.MigrationType))
 
 	// Endpoints section
 	fmt.Println("\n" + tui.CLIHighlightStyle.Render("Endpoints:"))
-	fmt.Printf("  %s %s\n", tui.CLILabelStyle.Render("Replication Instance:"), tui.CLIMutedStyle.Render(task.ReplicationInstanceARN))
-	fmt.Printf("  %s %s\n", tui.CLILabelStyle.Render("Source:"), tui.CLIMutedStyle.Render(task.SourceEndpointARN))
-	fmt.Printf("  %s %s\n", tui.CLILabelStyle.Render("Target:"), tui.CLIMutedStyle.Render(task.TargetEndpointARN))
+	fmt.Printf("  %s %s\n", tui.CLILabelStyle.Render("Replication Instance:"), tui.CLIMutedStyle.Render(dms.TruncateARN(task.ReplicationInstanceARN, 60)))
+	fmt.Printf("  %s %s\n", tui.CLILabelStyle.Render("Source:"), tui.CLIMutedStyle.Render(dms.TruncateARN(task.SourceEndpointARN, 60)))
+	fmt.Printf("  %s %s\n", tui.CLILabelStyle.Render("Target:"), tui.CLIMutedStyle.Render(dms.TruncateARN(task.TargetEndpointARN, 60)))
 
 	// Timestamps
 	if task.CreatedAt != nil {

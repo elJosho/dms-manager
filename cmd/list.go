@@ -61,7 +61,7 @@ func runList(cmd *cobra.Command, args []string) {
 			fmt.Printf("%s %s\n", tui.CLILabelStyle.Render("Task:"), tui.CLIPrimaryStyle.Render(task.Name))
 			fmt.Printf("%s %s\n", tui.CLILabelStyle.Render("Status:"), getListStatusStyle(task.Status).Render(task.Status))
 			fmt.Printf("%s %s\n", tui.CLILabelStyle.Render("Type:"), tui.CLIValueStyle.Render(task.MigrationType))
-			fmt.Printf("%s %s\n", tui.CLILabelStyle.Render("ARN:"), tui.CLIMutedStyle.Render(task.ARN))
+			fmt.Printf("%s %s\n", tui.CLILabelStyle.Render("ARN:"), tui.CLIMutedStyle.Render(dms.TruncateARN(task.ARN, 60)))
 
 			if task.ReplicationTaskStats != nil {
 				stats := task.ReplicationTaskStats
@@ -85,15 +85,21 @@ func runList(cmd *cobra.Command, args []string) {
 	} else {
 		// Print tasks in a table format
 		w := tabwriter.NewWriter(os.Stdout, 0, 0, 2, ' ', 0)
-		fmt.Fprintln(w, tui.CLIHeaderStyle.Render("NAME")+"\t"+tui.CLIHeaderStyle.Render("STATUS")+"\t"+tui.CLIHeaderStyle.Render("TYPE")+"\t"+tui.CLIHeaderStyle.Render("ARN"))
-		fmt.Fprintln(w, tui.CLIMutedStyle.Render("────")+"\t"+tui.CLIMutedStyle.Render("──────")+"\t"+tui.CLIMutedStyle.Render("────")+"\t"+tui.CLIMutedStyle.Render("───"))
+		fmt.Fprintln(w, tui.CLIHeaderStyle.Render("NAME")+"\t"+tui.CLIHeaderStyle.Render("STATUS")+"\t"+tui.CLIHeaderStyle.Render("%")+"\t"+tui.CLIHeaderStyle.Render("TYPE")+"\t"+tui.CLIHeaderStyle.Render("ARN"))
+		fmt.Fprintln(w, tui.CLIMutedStyle.Render("────")+"\t"+tui.CLIMutedStyle.Render("──────")+"\t"+tui.CLIMutedStyle.Render("─")+"\t"+tui.CLIMutedStyle.Render("────")+"\t"+tui.CLIMutedStyle.Render("───"))
 
 		for _, task := range tasks {
-			fmt.Fprintf(w, "%s\t%s\t%s\t%s\n",
+			progress := "-"
+			if task.ReplicationTaskStats != nil {
+				progress = fmt.Sprintf("%d%%", task.ReplicationTaskStats.FullLoadProgressPercent)
+			}
+
+			fmt.Fprintf(w, "%s\t%s\t%s\t%s\t%s\n",
 				tui.CLIPrimaryStyle.Render(task.Name),
 				getListStatusStyle(task.Status).Render(task.Status),
+				tui.CLINumberStyle.Render(progress),
 				tui.CLIValueStyle.Render(task.MigrationType),
-				tui.CLIMutedStyle.Render(task.ARN),
+				tui.CLIMutedStyle.Render(dms.TruncateARN(task.ARN, 40)),
 			)
 		}
 

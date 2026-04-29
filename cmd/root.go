@@ -20,6 +20,9 @@ var (
 		
 Supports both CLI commands and an interactive TUI for listing, describing, and controlling
 DMS tasks across different AWS profiles and regions.`,
+		Run: func(cmd *cobra.Command, args []string) {
+			runTUI(cmd, args)
+		},
 	}
 )
 
@@ -31,7 +34,7 @@ func Execute() error {
 func init() {
 	// Global flags available to all commands
 	rootCmd.PersistentFlags().StringVarP(&profile, "profile", "p", "", "AWS profile to use (default: default profile)")
-	rootCmd.PersistentFlags().StringVarP(&region, "r", "", "", "AWS region (default: from profile or AWS_REGION)")
+	rootCmd.PersistentFlags().StringVarP(&region, "region", "r", "", "AWS region (default: from profile or AWS_REGION)")
 }
 
 // GetProfile returns the global profile flag value

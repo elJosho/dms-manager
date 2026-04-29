@@ -385,7 +385,7 @@ All multi-task operations (start, stop, restart) use Go goroutines to process ta
 
 ### Auto-Refresh
 
-In TUI mode, the task list automatically refreshes every 5 seconds to show real-time status updates. Toggle this feature with the `a` key.
+In TUI mode, the task list automatically refreshes every 15 seconds to show real-time status updates. Toggle this feature with the `a` key.
 
 ### Task Selection
 

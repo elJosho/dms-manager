@@ -39,3 +39,14 @@ func FormatElapsedTime(millis int64) string {
 
 	return fmt.Sprintf("%ds", seconds)
 }
+
+// TruncateARN truncates an ARN from the beginning to fit a maximum length
+func TruncateARN(arn string, maxLen int) string {
+	if len(arn) <= maxLen {
+		return arn
+	}
+	if maxLen <= 3 {
+		return "..."
+	}
+	return "..." + arn[len(arn)-maxLen+3:]
+}

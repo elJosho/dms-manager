@@ -81,7 +81,12 @@ func (m Model) renderTaskList() string {
 			status := statusStyle.Render(task.Status)
 			migrationType := mutedTextStyle.Render(fmt.Sprintf("(%s)", task.MigrationType))
 
-			line := fmt.Sprintf("%s%s %s - %s %s", cursor, checkbox, nameStyle.Render(task.Name), status, migrationType)
+			progress := ""
+			if task.ReplicationTaskStats != nil {
+				progress = fmt.Sprintf(" %d%%", task.ReplicationTaskStats.FullLoadProgressPercent)
+			}
+
+			line := fmt.Sprintf("%s%s %s - %s%s %s", cursor, checkbox, nameStyle.Render(task.Name), status, numberStyle.Render(progress), migrationType)
 			sb.WriteString(line)
 			sb.WriteString("\n")
 		}
@@ -102,22 +107,19 @@ func (m Model) renderTaskDetails() string {
 
 	var sb strings.Builder
 
-	sb.WriteString(titleStyle.Render("Task Details"))
-	sb.WriteString("\n\n")
-
 	// Basic info with colored labels
 	sb.WriteString(fmt.Sprintf("%s %s\n", labelStyle.Render("Name:"), valueStyle.Render(task.Name)))
 	sb.WriteString(fmt.Sprintf("%s %s\n", labelStyle.Render("Status:"), GetStatusStyle(strings.ToLower(task.Status)).Render(task.Status)))
 	sb.WriteString(fmt.Sprintf("%s %s\n", labelStyle.Render("Type:"), valueStyle.Render(task.MigrationType)))
-	sb.WriteString(fmt.Sprintf("%s %s\n", labelStyle.Render("ARN:"), arnStyle.Render(task.ARN)))
+	sb.WriteString(fmt.Sprintf("%s %s\n", labelStyle.Render("ARN:"), arnStyle.Render(dms.TruncateARN(task.ARN, 60))))
 	sb.WriteString("\n")
 
 	// Endpoints section
 	sb.WriteString(sectionHeaderStyle.Render("Endpoints:"))
 	sb.WriteString("\n")
-	sb.WriteString(fmt.Sprintf("  %s %s\n", labelStyle.Render("Source:"), arnStyle.Render(task.SourceEndpointARN)))
-	sb.WriteString(fmt.Sprintf("  %s %s\n", labelStyle.Render("Target:"), arnStyle.Render(task.TargetEndpointARN)))
-	sb.WriteString(fmt.Sprintf("  %s %s\n", labelStyle.Render("Instance:"), arnStyle.Render(task.ReplicationInstanceARN)))
+	sb.WriteString(fmt.Sprintf("  %s %s\n", labelStyle.Render("Source:"), arnStyle.Render(dms.TruncateARN(task.SourceEndpointARN, 60))))
+	sb.WriteString(fmt.Sprintf("  %s %s\n", labelStyle.Render("Target:"), arnStyle.Render(dms.TruncateARN(task.TargetEndpointARN, 60))))
+	sb.WriteString(fmt.Sprintf("  %s %s\n", labelStyle.Render("Instance:"), arnStyle.Render(dms.TruncateARN(task.ReplicationInstanceARN, 60))))
 	sb.WriteString("\n")
 
 	// Timestamps
@@ -194,10 +196,17 @@ func (m Model) renderTaskDetails() string {
 
 	helpText := fmt.Sprintf("Press %s", strings.Join(parts, " • "))
 
-	sb.WriteString(helpStyle.Render(helpText))
-	sb.WriteString("\n")
+	// Set viewport content
+	m.viewport.SetContent(sb.String())
 
-	return sb.String()
+	var viewSb strings.Builder
+	viewSb.WriteString(titleStyle.Render("Task Details"))
+	viewSb.WriteString("\n\n")
+	viewSb.WriteString(m.viewport.View())
+	viewSb.WriteString("\n\n")
+	viewSb.WriteString(helpStyle.Render(helpText))
+
+	return viewSb.String()
 }
 
 func (m Model) renderTableStats() string {
@@ -208,9 +217,6 @@ func (m Model) renderTableStats() string {
 	task := m.tasks[m.detailsTaskIdx]
 
 	var sb strings.Builder
-
-	sb.WriteString(titleStyle.Render(fmt.Sprintf("Table Statistics - %s", task.Name)))
-	sb.WriteString("\n\n")
 
 	if len(m.tableStats) == 0 {
 		sb.WriteString(warningTextStyle.Render("No table statistics available."))
@@ -244,11 +250,17 @@ func (m Model) renderTableStats() string {
 		}
 	}
 
-	sb.WriteString("\n")
-	sb.WriteString(helpStyle.Render("Press [ESC] to go back"))
-	sb.WriteString("\n")
+	// Set viewport content
+	m.viewport.SetContent(sb.String())
 
-	return sb.String()
+	var viewSb strings.Builder
+	viewSb.WriteString(titleStyle.Render(fmt.Sprintf("Table Statistics - %s", task.Name)))
+	viewSb.WriteString("\n\n")
+	viewSb.WriteString(m.viewport.View())
+	viewSb.WriteString("\n\n")
+	viewSb.WriteString(helpStyle.Render("Press [ESC] to go back"))
+
+	return viewSb.String()
 }
 
 func (m Model) renderHelp() string {
@@ -292,13 +304,6 @@ func getTableValidationStyle(state string) lipglossStyle {
 	}
 }
 
-func truncateARN(arn string) string {
-	parts := strings.Split(arn, ":")
-	if len(parts) > 0 {
-		return parts[len(parts)-1]
-	}
-	return arn
-}
 
 func truncateString(s string, maxLen int) string {
 	if len(s) > maxLen {

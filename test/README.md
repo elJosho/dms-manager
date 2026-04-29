@@ -41,19 +41,23 @@ This script:
 
 ## Mock Data
 
-The server provides **3 mock tasks**:
+The server provides **26+ mock tasks**:
 
 ### mock-task-1
 - Status: `running`
 - Type: `full-load`
 - Progress: 75%
 - Tables: 15 loaded, 3 loading, 2 queued
+- **Table Statistics**: Supports 20+ mock table entries for testing scrolling
 
-### mock-task-2
+### pagination-task-4 to 25
 - Status: `stopped`
-- Type: `full-load-and-cdc`
-- Progress: 100%
-- Tables: 25 loaded
+- Type: `full-load`
+- Used for testing **pagination** and **scrolling** in the TUI task list
+
+### very-long-task-identifier...
+- Status: `running`
+- Used for testing **ARN truncation** in CLI and TUI
 
 ### mock-task-3
 - Status: `failed`
@@ -66,6 +70,7 @@ The server provides **3 mock tasks**:
 The mock server implements these DMS API operations:
 
 - ✅ **DescribeReplicationTasks** - List all tasks or filter by ARN
+- ✅ **DescribeTableStatistics** - List table statistics for a task
 - ✅ **StartReplicationTask** - Changes task status to "starting"
 - ✅ **StopReplicationTask** - Changes task status to "stopping"
 - ✅ Mock endpoints and replication instances

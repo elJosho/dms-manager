@@ -5,6 +5,7 @@ import (
 	"strings"
 
 	"github.com/charmbracelet/bubbles/spinner"
+	"github.com/charmbracelet/bubbles/viewport"
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/eljosho/dms-manager/pkg/dms"
 )
@@ -30,6 +31,7 @@ type Model struct {
 	state             viewState
 	err               error
 	spinner           spinner.Model
+	viewport          viewport.Model
 	width             int
 	height            int
 	detailsTaskIdx    int
@@ -50,6 +52,7 @@ func NewModel(client *dms.Client) Model {
 		state:       viewLoading,
 		spinner:     s,
 		autoRefresh: true,
+		viewport:    viewport.New(0, 0),
 	}
 }
 
@@ -70,6 +73,8 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	case tea.WindowSizeMsg:
 		m.width = msg.Width
 		m.height = msg.Height
+		m.viewport.Width = msg.Width
+		m.viewport.Height = msg.Height - 6 // Room for title and help
 		return m, nil
 
 	case tasksLoadedMsg:
@@ -168,6 +173,18 @@ func (m Model) handleTaskListKeys(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 			m.cursor++
 		}
 
+	case "pgup":
+		m.cursor -= 10
+		if m.cursor < 0 {
+			m.cursor = 0
+		}
+
+	case "pgdown":
+		m.cursor += 10
+		if m.cursor >= len(m.tasks) {
+			m.cursor = len(m.tasks) - 1
+		}
+
 	case " ":
 		// Toggle selection
 		if m.selected[m.cursor] {
@@ -223,6 +240,10 @@ func (m Model) handleTaskListKeys(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 
 func (m Model) handleTaskDetailsKeys(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 	switch msg.String() {
+	case "up", "down", "pgup", "pgdown":
+		var cmd tea.Cmd
+		m.viewport, cmd = m.viewport.Update(msg)
+		return m, cmd
 	case "esc", "backspace":
 		m.state = viewTaskList
 	case "t":
@@ -240,6 +261,10 @@ func (m Model) handleTaskDetailsKeys(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 
 func (m Model) handleTableStatsKeys(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 	switch msg.String() {
+	case "up", "down", "pgup", "pgdown":
+		var cmd tea.Cmd
+		m.viewport, cmd = m.viewport.Update(msg)
+		return m, cmd
 	case "esc", "backspace", "q":
 		m.state = viewTaskDetails
 	}

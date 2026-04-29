@@ -3,6 +3,7 @@ package main
 import (
 	"bytes"
 	"encoding/json"
+	"fmt"
 	"io"
 	"log"
 	"net/http"
@@ -94,6 +95,47 @@ var tasks = map[string]*MockTask{
 			TablesErrored:           1,
 		},
 	},
+	"very-long-task-identifier-with-many-characters-to-test-arn-truncation-in-the-tui-and-cli-outputs": {
+		ReplicationTaskArn:          "arn:aws:dms:us-east-1:123456789012:task:very-long-task-identifier-with-many-characters-to-test-arn-truncation-in-the-tui-and-cli-outputs",
+		ReplicationTaskIdentifier:   "very-long-task-identifier-with-many-characters-to-test-arn-truncation-in-the-tui-and-cli-outputs",
+		Status:                      "running",
+		ReplicationInstanceArn:      "arn:aws:dms:us-east-1:123456789012:rep:mock-instance",
+		SourceEndpointArn:           "arn:aws:dms:us-east-1:123456789012:endpoint:mock-source",
+		TargetEndpointArn:           "arn:aws:dms:us-east-1:123456789012:endpoint:mock-target",
+		MigrationType:               "full-load",
+		TableMappings:               `{"rules":[{"rule-type":"selection","rule-id":"1","rule-name":"1","object-locator":{"schema-name":"production","table-name":"%"},"rule-action":"include"}]}`,
+		ReplicationTaskCreationDate: epoch(time.Now().Add(-10 * time.Hour)),
+		ReplicationTaskStats: &TaskStats{
+			FullLoadProgressPercent: 12,
+			TablesLoaded:            5,
+			TablesLoading:           2,
+			TablesQueued:            40,
+			TablesErrored:           0,
+		},
+	},
+}
+
+// Helper to generate many tasks for pagination testing
+func init() {
+	for i := 4; i <= 25; i++ {
+		id := fmt.Sprintf("pagination-task-%d", i)
+		tasks[id] = &MockTask{
+			ReplicationTaskArn:        fmt.Sprintf("arn:aws:dms:us-east-1:123456789012:task:%s", id),
+			ReplicationTaskIdentifier: id,
+			Status:                    "stopped",
+			ReplicationInstanceArn:    "arn:aws:dms:us-east-1:123456789012:rep:mock-instance",
+			SourceEndpointArn:         "arn:aws:dms:us-east-1:123456789012:endpoint:mock-source",
+			TargetEndpointArn:         "arn:aws:dms:us-east-1:123456789012:endpoint:mock-target",
+			MigrationType:             "full-load",
+			ReplicationTaskStats: &TaskStats{
+				FullLoadProgressPercent: int32(i * 4 % 100),
+				TablesLoaded:            int32(i),
+				TablesLoading:           0,
+				TablesQueued:            0,
+				TablesErrored:           0,
+			},
+		}
+	}
 }
 
 // Stats for table statistics mock
@@ -114,6 +156,23 @@ var tableStats = map[string][]MockTableStat{
 		{SchemaName: "public", TableName: "users", Inserts: 100, Deletes: 5, Updates: 20, FullLoadRows: 1000, LastUpdateTime: epoch(time.Now()), ValidationState: "Validated"},
 		{SchemaName: "public", TableName: "orders", Inserts: 500, Deletes: 10, Updates: 50, FullLoadRows: 5000, LastUpdateTime: epoch(time.Now()), ValidationState: "Validated"},
 		{SchemaName: "public", TableName: "products", Inserts: 50, Deletes: 0, Updates: 10, FullLoadRows: 500, LastUpdateTime: epoch(time.Now()), ValidationState: "Validated"},
+		{SchemaName: "public", TableName: "audit_logs", Inserts: 10000, Deletes: 0, Updates: 0, FullLoadRows: 1000000, LastUpdateTime: epoch(time.Now()), ValidationState: "Validated"},
+		{SchemaName: "public", TableName: "user_profiles", Inserts: 50, Deletes: 2, Updates: 100, FullLoadRows: 1000, LastUpdateTime: epoch(time.Now()), ValidationState: "Validated"},
+		{SchemaName: "public", TableName: "order_items", Inserts: 2000, Deletes: 5, Updates: 10, FullLoadRows: 25000, LastUpdateTime: epoch(time.Now()), ValidationState: "Validated"},
+		{SchemaName: "public", TableName: "reviews", Inserts: 300, Deletes: 1, Updates: 5, FullLoadRows: 3000, LastUpdateTime: epoch(time.Now()), ValidationState: "Validated"},
+		{SchemaName: "public", TableName: "categories", Inserts: 10, Deletes: 0, Updates: 0, FullLoadRows: 50, LastUpdateTime: epoch(time.Now()), ValidationState: "Validated"},
+		{SchemaName: "public", TableName: "settings", Inserts: 5, Deletes: 0, Updates: 20, FullLoadRows: 100, LastUpdateTime: epoch(time.Now()), ValidationState: "Validated"},
+		{SchemaName: "public", TableName: "notifications", Inserts: 1500, Deletes: 100, Updates: 0, FullLoadRows: 10000, LastUpdateTime: epoch(time.Now()), ValidationState: "Validated"},
+		{SchemaName: "public", TableName: "vouchers", Inserts: 20, Deletes: 0, Updates: 5, FullLoadRows: 200, LastUpdateTime: epoch(time.Now()), ValidationState: "Validated"},
+		{SchemaName: "public", TableName: "payments", Inserts: 500, Deletes: 0, Updates: 0, FullLoadRows: 5000, LastUpdateTime: epoch(time.Now()), ValidationState: "Validated"},
+		{SchemaName: "public", TableName: "shipments", Inserts: 450, Deletes: 0, Updates: 15, FullLoadRows: 4500, LastUpdateTime: epoch(time.Now()), ValidationState: "Validated"},
+		{SchemaName: "public", TableName: "addresses", Inserts: 120, Deletes: 3, Updates: 10, FullLoadRows: 1200, LastUpdateTime: epoch(time.Now()), ValidationState: "Validated"},
+		{SchemaName: "public", TableName: "support_tickets", Inserts: 80, Deletes: 0, Updates: 150, FullLoadRows: 500, LastUpdateTime: epoch(time.Now()), ValidationState: "Validated"},
+		{SchemaName: "public", TableName: "cart_items", Inserts: 200, Deletes: 150, Updates: 50, FullLoadRows: 1000, LastUpdateTime: epoch(time.Now()), ValidationState: "Validated"},
+		{SchemaName: "public", TableName: "wishlists", Inserts: 150, Deletes: 10, Updates: 0, FullLoadRows: 1500, LastUpdateTime: epoch(time.Now()), ValidationState: "Validated"},
+		{SchemaName: "public", TableName: "promo_codes", Inserts: 25, Deletes: 0, Updates: 10, FullLoadRows: 100, LastUpdateTime: epoch(time.Now()), ValidationState: "Validated"},
+		{SchemaName: "public", TableName: "user_activities", Inserts: 5000, Deletes: 0, Updates: 0, FullLoadRows: 50000, LastUpdateTime: epoch(time.Now()), ValidationState: "Validated"},
+		{SchemaName: "public", TableName: "error_logs", Inserts: 50, Deletes: 0, Updates: 0, FullLoadRows: 500, LastUpdateTime: epoch(time.Now()), ValidationState: "Validated"},
 	},
 	"arn:aws:dms:us-east-1:123456789012:task:mock-task-2": {
 		{SchemaName: "public", TableName: "inventory", Inserts: 10, Deletes: 0, Updates: 5, FullLoadRows: 100, LastUpdateTime: epoch(time.Now()), ValidationState: "Pending"},
