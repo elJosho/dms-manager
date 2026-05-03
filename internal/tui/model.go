@@ -240,7 +240,7 @@ func (m Model) handleTaskListKeys(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 
 func (m Model) handleTaskDetailsKeys(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 	switch msg.String() {
-	case "up", "down", "pgup", "pgdown":
+	case "up", "down", "pgup", "pgdown", "j", "k":
 		var cmd tea.Cmd
 		m.viewport, cmd = m.viewport.Update(msg)
 		return m, cmd
@@ -261,7 +261,7 @@ func (m Model) handleTaskDetailsKeys(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 
 func (m Model) handleTableStatsKeys(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 	switch msg.String() {
-	case "up", "down", "pgup", "pgdown":
+	case "up", "down", "pgup", "pgdown", "j", "k":
 		var cmd tea.Cmd
 		m.viewport, cmd = m.viewport.Update(msg)
 		return m, cmd

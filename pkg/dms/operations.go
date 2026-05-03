@@ -156,9 +156,17 @@ func (c *Client) StopTasks(ctx context.Context, arns []string) []TaskOperation {
 
 // RestartTask restarts a task (stop then start)
 func (c *Client) RestartTask(ctx context.Context, arn string, startType types.StartReplicationTaskTypeValue) error {
-	// First stop the task
-	if err := c.StopTask(ctx, arn); err != nil {
-		return fmt.Errorf("failed to stop task during restart: %w", err)
+	// Describe task to check its status
+	task, err := c.DescribeTask(ctx, arn)
+	if err != nil {
+		return fmt.Errorf("failed to describe task during restart: %w", err)
+	}
+
+	// First stop the task if it is not already stopped
+	if task.Status != "stopped" && task.Status != "failed" {
+		if err := c.StopTask(ctx, arn); err != nil {
+			return fmt.Errorf("failed to stop task during restart: %w", err)
+		}
 	}
 
 	// Wait for task to stop (in production, you'd want to poll the status)
@@ -188,6 +196,51 @@ func (c *Client) RestartTasks(ctx context.Context, arns []string, startType type
 				Success: err == nil,
 				Error:   err,
 				Message: getOperationMessage("restart", err),
+			}
+		}(i, arn)
+	}
+
+	wg.Wait()
+	return results
+}
+
+// ReloadTable reloads a specific table in a DMS replication task
+func (c *Client) ReloadTable(ctx context.Context, arn string, schemaName, tableName string) error {
+	input := &databasemigrationservice.ReloadTablesInput{
+		ReplicationTaskArn: stringPtr(arn),
+		TablesToReload: []types.TableToReload{
+			{
+				SchemaName: stringPtr(schemaName),
+				TableName:  stringPtr(tableName),
+			},
+		},
+		ReloadOption: types.ReloadOptionValueDataReload,
+	}
+
+	_, err := c.svc.ReloadTables(ctx, input)
+	if err != nil {
+		return fmt.Errorf("failed to reload table %s.%s: %w", schemaName, tableName, err)
+	}
+
+	return nil
+}
+
+// ReloadTablesInTasks reloads a specific table across multiple tasks in parallel
+func (c *Client) ReloadTablesInTasks(ctx context.Context, arns []string, schemaName, tableName string) []TaskOperation {
+	var wg sync.WaitGroup
+	results := make([]TaskOperation, len(arns))
+
+	for i, arn := range arns {
+		wg.Add(1)
+		go func(index int, taskARN string) {
+			defer wg.Done()
+
+			err := c.ReloadTable(ctx, taskARN, schemaName, tableName)
+			results[index] = TaskOperation{
+				TaskARN: taskARN,
+				Success: err == nil,
+				Error:   err,
+				Message: getOperationMessage(fmt.Sprintf("reload table %s.%s", schemaName, tableName), err),
 			}
 		}(i, arn)
 	}

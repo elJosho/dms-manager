@@ -67,10 +67,10 @@ func runList(cmd *cobra.Command, args []string) {
 				stats := task.ReplicationTaskStats
 				fmt.Println("\n" + tui.CLIHighlightStyle.Render("Statistics:"))
 				fmt.Printf("  %s %s\n", tui.CLILabelStyle.Render("Full Load Progress:"), tui.CLINumberStyle.Render(fmt.Sprintf("%d%%", stats.FullLoadProgressPercent)))
-				fmt.Printf("  %s %s\n", tui.CLILabelStyle.Render("Tables Loaded:"), tui.CLINumberStyle.Render(fmt.Sprintf("%d", stats.TablesLoaded)))
-				fmt.Printf("  %s %s\n", tui.CLILabelStyle.Render("Tables Loading:"), tui.CLINumberStyle.Render(fmt.Sprintf("%d", stats.TablesLoading)))
-				fmt.Printf("  %s %s\n", tui.CLILabelStyle.Render("Tables Queued:"), tui.CLINumberStyle.Render(fmt.Sprintf("%d", stats.TablesQueued)))
-				fmt.Printf("  %s %s\n", tui.CLILabelStyle.Render("Tables Errored:"), getListErrorCountStyle(stats.TablesErrored).Render(fmt.Sprintf("%d", stats.TablesErrored)))
+				fmt.Printf("  %s %s\n", tui.CLILabelStyle.Render("Tables Loaded:"), tui.CLINumberStyle.Render(dms.FormatNumber(stats.TablesLoaded)))
+				fmt.Printf("  %s %s\n", tui.CLILabelStyle.Render("Tables Loading:"), tui.CLINumberStyle.Render(dms.FormatNumber(stats.TablesLoading)))
+				fmt.Printf("  %s %s\n", tui.CLILabelStyle.Render("Tables Queued:"), tui.CLINumberStyle.Render(dms.FormatNumber(stats.TablesQueued)))
+				fmt.Printf("  %s %s\n", tui.CLILabelStyle.Render("Tables Errored:"), getListErrorCountStyle(stats.TablesErrored).Render(dms.FormatNumber(stats.TablesErrored)))
 
 				if stats.ElapsedTimeMillis > 0 {
 					fmt.Printf("  %s %s\n", tui.CLILabelStyle.Render("Elapsed Time:"), tui.CLIValueStyle.Render(dms.FormatElapsedTime(stats.ElapsedTimeMillis)))
@@ -85,19 +85,26 @@ func runList(cmd *cobra.Command, args []string) {
 	} else {
 		// Print tasks in a table format
 		w := tabwriter.NewWriter(os.Stdout, 0, 0, 2, ' ', 0)
-		fmt.Fprintln(w, tui.CLIHeaderStyle.Render("NAME")+"\t"+tui.CLIHeaderStyle.Render("STATUS")+"\t"+tui.CLIHeaderStyle.Render("%")+"\t"+tui.CLIHeaderStyle.Render("TYPE")+"\t"+tui.CLIHeaderStyle.Render("ARN"))
-		fmt.Fprintln(w, tui.CLIMutedStyle.Render("────")+"\t"+tui.CLIMutedStyle.Render("──────")+"\t"+tui.CLIMutedStyle.Render("─")+"\t"+tui.CLIMutedStyle.Render("────")+"\t"+tui.CLIMutedStyle.Render("───"))
+		fmt.Fprintln(w, tui.CLIHeaderStyle.Render("NAME")+"\t"+tui.CLIHeaderStyle.Render("STATUS")+"\t"+tui.CLIHeaderStyle.Render("%")+"\t"+tui.CLIHeaderStyle.Render("TABLES")+"\t"+tui.CLIHeaderStyle.Render("ELAPSED")+"\t"+tui.CLIHeaderStyle.Render("TYPE")+"\t"+tui.CLIHeaderStyle.Render("ARN"))
+		fmt.Fprintln(w, tui.CLIMutedStyle.Render("────")+"\t"+tui.CLIMutedStyle.Render("──────")+"\t"+tui.CLIMutedStyle.Render("─")+"\t"+tui.CLIMutedStyle.Render("──────")+"\t"+tui.CLIMutedStyle.Render("───────")+"\t"+tui.CLIMutedStyle.Render("────")+"\t"+tui.CLIMutedStyle.Render("───"))
 
 		for _, task := range tasks {
 			progress := "-"
+			tablesStr := "-"
+			elapsedStr := "-"
 			if task.ReplicationTaskStats != nil {
 				progress = fmt.Sprintf("%d%%", task.ReplicationTaskStats.FullLoadProgressPercent)
+				totalTables := task.ReplicationTaskStats.TablesLoaded + task.ReplicationTaskStats.TablesLoading + task.ReplicationTaskStats.TablesQueued + task.ReplicationTaskStats.TablesErrored
+				tablesStr = dms.FormatNumber(totalTables)
+				elapsedStr = dms.FormatElapsedTime(task.ReplicationTaskStats.ElapsedTimeMillis)
 			}
 
-			fmt.Fprintf(w, "%s\t%s\t%s\t%s\t%s\n",
+			fmt.Fprintf(w, "%s\t%s\t%s\t%s\t%s\t%s\t%s\n",
 				tui.CLIPrimaryStyle.Render(task.Name),
 				getListStatusStyle(task.Status).Render(task.Status),
 				tui.CLINumberStyle.Render(progress),
+				tui.CLINumberStyle.Render(tablesStr),
+				tui.CLIValueStyle.Render(elapsedStr),
 				tui.CLIValueStyle.Render(task.MigrationType),
 				tui.CLIMutedStyle.Render(dms.TruncateARN(task.ARN, 40)),
 			)

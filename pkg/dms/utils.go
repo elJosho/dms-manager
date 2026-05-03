@@ -1,6 +1,10 @@
 package dms
 
-import "fmt"
+import (
+	"fmt"
+	"golang.org/x/text/language"
+	"golang.org/x/text/message"
+)
 
 // FormatElapsedTime converts milliseconds to human-readable format
 func FormatElapsedTime(millis int64) string {
@@ -49,4 +53,10 @@ func TruncateARN(arn string, maxLen int) string {
 		return "..."
 	}
 	return "..." + arn[len(arn)-maxLen+3:]
+}
+
+// FormatNumber formats a number with comma separators (e.g., 1,234,567)
+func FormatNumber(n interface{}) string {
+	p := message.NewPrinter(language.English)
+	return p.Sprintf("%v", n)
 }

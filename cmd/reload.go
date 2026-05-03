@@ -3,6 +3,7 @@ package cmd
 import (
 	"context"
 	"fmt"
+	"strings"
 
 	"github.com/aws/aws-sdk-go-v2/service/databasemigrationservice/types"
 	"github.com/eljosho/dms-manager/pkg/dms"
@@ -22,12 +23,14 @@ Note: When using wildcards, you MUST quote the argument to prevent shell expansi
 
 Examples:
   dms-manager reload task1 task2
-  dms-manager reload "*-database"`,
+  dms-manager reload "*-database"
+  dms-manager reload task1 --table schema.table`,
 	Args: cobra.MinimumNArgs(1),
 	Run:  runReload,
 }
 
 func init() {
+	reloadCmd.Flags().String("table", "", "Specific table to reload in format 'schema.table'")
 	rootCmd.AddCommand(reloadCmd)
 }
 
@@ -49,10 +52,21 @@ func runReload(cmd *cobra.Command, args []string) {
 		exitWithError(fmt.Errorf("no valid tasks found"))
 	}
 
-	fmt.Printf("Reloading %d task(s) in parallel...\n\n", len(taskARNs))
+	tableFlag, _ := cmd.Flags().GetString("table")
 
-	// Use reload-target start type
-	results := client.RestartTasks(ctx, taskARNs, types.StartReplicationTaskTypeValueReloadTarget)
+	var results []dms.TaskOperation
+	if tableFlag != "" {
+		parts := strings.Split(tableFlag, ".")
+		if len(parts) != 2 {
+			exitWithError(fmt.Errorf("invalid table format '%s', expected 'schema.table'", tableFlag))
+		}
+		fmt.Printf("Reloading table %s.%s on %d task(s) in parallel...\n\n", parts[0], parts[1], len(taskARNs))
+		results = client.ReloadTablesInTasks(ctx, taskARNs, parts[0], parts[1])
+	} else {
+		fmt.Printf("Reloading %d task(s) in parallel...\n\n", len(taskARNs))
+		// Use reload-target start type
+		results = client.RestartTasks(ctx, taskARNs, types.StartReplicationTaskTypeValueReloadTarget)
+	}
 
 	// Print results
 	successCount := 0

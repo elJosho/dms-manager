@@ -3,9 +3,7 @@ package cmd
 import (
 	"context"
 	"fmt"
-	"os"
 	"strings"
-	"text/tabwriter"
 
 	"github.com/charmbracelet/lipgloss"
 	"github.com/eljosho/dms-manager/internal/tui"
@@ -36,31 +34,10 @@ func runDescribe(cmd *cobra.Command, args []string) {
 		exitWithError(fmt.Errorf("failed to create DMS client: %w", err))
 	}
 
-	// If args don't look like ARNs, try to find matching tasks by name
-	taskARNs := make([]string, 0, len(args))
-	for _, arg := range args {
-		if strings.HasPrefix(arg, "arn:") {
-			taskARNs = append(taskARNs, arg)
-		} else {
-			// Need to list tasks and find by name
-			tasks, err := client.ListTasks(ctx)
-			if err != nil {
-				exitWithError(err)
-			}
-
-			found := false
-			for _, task := range tasks {
-				if task.Name == arg {
-					taskARNs = append(taskARNs, task.ARN)
-					found = true
-					break
-				}
-			}
-
-			if !found {
-				fmt.Printf("%s task '%s' not found\n", tui.CLIWarningStyle.Render("Warning:"), arg)
-			}
-		}
+	// Resolve task names and wildcards to ARNs
+	taskARNs, err := resolveTaskARNs(ctx, client, args)
+	if err != nil {
+		exitWithError(err)
 	}
 
 	if len(taskARNs) == 0 {
@@ -124,10 +101,10 @@ func printTaskDetails(task *dms.Task) {
 		stats := task.ReplicationTaskStats
 		fmt.Println("\n" + tui.CLIHighlightStyle.Render("Statistics:"))
 		fmt.Printf("  %s %s\n", tui.CLILabelStyle.Render("Full Load Progress:"), tui.CLINumberStyle.Render(fmt.Sprintf("%d%%", stats.FullLoadProgressPercent)))
-		fmt.Printf("  %s %s\n", tui.CLILabelStyle.Render("Tables Loaded:"), tui.CLINumberStyle.Render(fmt.Sprintf("%d", stats.TablesLoaded)))
-		fmt.Printf("  %s %s\n", tui.CLILabelStyle.Render("Tables Loading:"), tui.CLINumberStyle.Render(fmt.Sprintf("%d", stats.TablesLoading)))
-		fmt.Printf("  %s %s\n", tui.CLILabelStyle.Render("Tables Queued:"), tui.CLINumberStyle.Render(fmt.Sprintf("%d", stats.TablesQueued)))
-		fmt.Printf("  %s %s\n", tui.CLILabelStyle.Render("Tables Errored:"), getDescribeErrorCountStyle(stats.TablesErrored).Render(fmt.Sprintf("%d", stats.TablesErrored)))
+		fmt.Printf("  %s %s\n", tui.CLILabelStyle.Render("Tables Loaded:"), tui.CLINumberStyle.Render(dms.FormatNumber(stats.TablesLoaded)))
+		fmt.Printf("  %s %s\n", tui.CLILabelStyle.Render("Tables Loading:"), tui.CLINumberStyle.Render(dms.FormatNumber(stats.TablesLoading)))
+		fmt.Printf("  %s %s\n", tui.CLILabelStyle.Render("Tables Queued:"), tui.CLINumberStyle.Render(dms.FormatNumber(stats.TablesQueued)))
+		fmt.Printf("  %s %s\n", tui.CLILabelStyle.Render("Tables Errored:"), getDescribeErrorCountStyle(stats.TablesErrored).Render(dms.FormatNumber(stats.TablesErrored)))
 
 		if stats.ElapsedTimeMillis > 0 {
 			fmt.Printf("  %s %s\n", tui.CLILabelStyle.Render("Elapsed Time:"), tui.CLIValueStyle.Render(dms.FormatElapsedTime(stats.ElapsedTimeMillis)))
@@ -146,38 +123,54 @@ func printTableStatistics(stats []dms.TableStatistic) {
 	}
 
 	fmt.Println("\n" + tui.CLIHighlightStyle.Render("Table Statistics:"))
-	w := tabwriter.NewWriter(os.Stdout, 0, 0, 2, ' ', 0)
+	// Header
+	headerFmt := "  %-15s %-30s %-10s %-10s %-10s %-8s %-10s %-15s"
+	fmt.Printf(headerFmt+"\n",
+		tui.CLIHeaderStyle.Render("SCHEMA"),
+		tui.CLIHeaderStyle.Render("TABLE"),
+		tui.CLIHeaderStyle.Render("INSERTS"),
+		tui.CLIHeaderStyle.Render("UPDATES"),
+		tui.CLIHeaderStyle.Render("DELETES"),
+		tui.CLIHeaderStyle.Render("DDLS"),
+		tui.CLIHeaderStyle.Render("ROWS"),
+		tui.CLIHeaderStyle.Render("STATE"),
+	)
 
-	// Colored headers
-	headers := []string{"SCHEMA", "TABLE", "INSERTS", "UPDATES", "DELETES", "DDLS", "ROWS", "STATE"}
-	var coloredHeaders []string
-	for _, h := range headers {
-		coloredHeaders = append(coloredHeaders, tui.CLIHeaderStyle.Render(h))
-	}
-	fmt.Fprintln(w, "  "+strings.Join(coloredHeaders, "\t"))
-
-	// Separator line
-	separators := []string{"──────", "─────", "───────", "───────", "───────", "────", "────", "─────"}
-	var coloredSeps []string
-	for _, s := range separators {
-		coloredSeps = append(coloredSeps, tui.CLIMutedStyle.Render(s))
-	}
-	fmt.Fprintln(w, "  "+strings.Join(coloredSeps, "\t"))
+	// Separator
+	fmt.Printf(headerFmt+"\n",
+		tui.CLIMutedStyle.Render("───────────────"),
+		tui.CLIMutedStyle.Render("──────────────────────────────"),
+		tui.CLIMutedStyle.Render("──────────"),
+		tui.CLIMutedStyle.Render("──────────"),
+		tui.CLIMutedStyle.Render("──────────"),
+		tui.CLIMutedStyle.Render("────────"),
+		tui.CLIMutedStyle.Render("──────────"),
+		tui.CLIMutedStyle.Render("───────────────"),
+	)
 
 	for _, s := range stats {
 		stateStyle := getValidationStateStyle(s.ValidationState)
-		fmt.Fprintf(w, "  %s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\n",
-			tui.CLIValueStyle.Render(s.SchemaName),
-			tui.CLIPrimaryStyle.Render(s.TableName),
-			tui.CLINumberStyle.Render(fmt.Sprintf("%d", s.Inserts)),
-			tui.CLINumberStyle.Render(fmt.Sprintf("%d", s.Updates)),
-			tui.CLINumberStyle.Render(fmt.Sprintf("%d", s.Deletes)),
-			tui.CLINumberStyle.Render(fmt.Sprintf("%d", s.Ddls)),
-			tui.CLINumberStyle.Render(fmt.Sprintf("%d", s.FullLoadRows)),
-			stateStyle.Render(s.ValidationState),
+
+		schemaPad := fmt.Sprintf("%-15s", truncateString(s.SchemaName, 15))
+		tablePad := fmt.Sprintf("%-30s", truncateString(s.TableName, 30))
+		insertsPad := fmt.Sprintf("%-10s", dms.FormatNumber(s.Inserts))
+		updatesPad := fmt.Sprintf("%-10s", dms.FormatNumber(s.Updates))
+		deletesPad := fmt.Sprintf("%-10s", dms.FormatNumber(s.Deletes))
+		ddlsPad := fmt.Sprintf("%-8s", dms.FormatNumber(s.Ddls))
+		rowsPad := fmt.Sprintf("%-10s", dms.FormatNumber(s.FullLoadRows))
+		statePad := fmt.Sprintf("%-15s", s.ValidationState)
+
+		fmt.Printf("  %s %s %s %s %s %s %s %s\n",
+			tui.CLIValueStyle.Render(schemaPad),
+			tui.CLIPrimaryStyle.Render(tablePad),
+			tui.CLINumberStyle.Render(insertsPad),
+			tui.CLINumberStyle.Render(updatesPad),
+			tui.CLINumberStyle.Render(deletesPad),
+			tui.CLINumberStyle.Render(ddlsPad),
+			tui.CLINumberStyle.Render(rowsPad),
+			stateStyle.Render(statePad),
 		)
 	}
-	w.Flush()
 }
 
 // getDescribeStatusStyle returns the appropriate style for a task status
@@ -212,4 +205,11 @@ func getValidationStateStyle(state string) lipgloss.Style {
 	default:
 		return tui.CLIWarningStyle
 	}
+}
+
+func truncateString(s string, maxLen int) string {
+	if len(s) > maxLen {
+		return s[:maxLen-3] + "..."
+	}
+	return s
 }

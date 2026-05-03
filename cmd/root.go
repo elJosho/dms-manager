@@ -8,14 +8,18 @@ import (
 )
 
 var (
+	// Version is the current version of the application
+	Version = "v0.2.0"
+
 	// Global flags
 	profile string
 	region  string
 
 	// Root command
 	rootCmd = &cobra.Command{
-		Use:   "dms-manager",
-		Short: "Manage AWS DMS replication tasks",
+		Use:     "dms-manager",
+		Version: Version,
+		Short:   "Manage AWS DMS replication tasks",
 		Long: `A command-line tool for managing AWS Database Migration Service (DMS) replication tasks.
 		
 Supports both CLI commands and an interactive TUI for listing, describing, and controlling

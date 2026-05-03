@@ -77,16 +77,46 @@ func (m Model) renderTaskList() string {
 				nameStyle = selectedItemStyle
 			}
 
+			statusText := task.Status
 			statusStyle := GetStatusStyle(strings.ToLower(task.Status))
-			status := statusStyle.Render(task.Status)
-			migrationType := mutedTextStyle.Render(fmt.Sprintf("(%s)", task.MigrationType))
 
-			progress := ""
+			progressText := "-"
+			tablesText := "-"
+			elapsedText := "-"
 			if task.ReplicationTaskStats != nil {
-				progress = fmt.Sprintf(" %d%%", task.ReplicationTaskStats.FullLoadProgressPercent)
+				progressText = fmt.Sprintf("%d%%", task.ReplicationTaskStats.FullLoadProgressPercent)
+				totalTables := task.ReplicationTaskStats.TablesLoaded + task.ReplicationTaskStats.TablesLoading + task.ReplicationTaskStats.TablesQueued + task.ReplicationTaskStats.TablesErrored
+				tablesText = dms.FormatNumber(totalTables)
+				elapsedText = dms.FormatElapsedTime(task.ReplicationTaskStats.ElapsedTimeMillis)
+
+				if strings.ToLower(statusText) == "running" && task.ReplicationTaskStats.TablesErrored > 0 {
+					statusText = "running w/ errs"
+					statusStyle = errorStyle
+				}
 			}
 
-			line := fmt.Sprintf("%s%s %s - %s%s %s", cursor, checkbox, nameStyle.Render(task.Name), status, numberStyle.Render(progress), migrationType)
+			name := task.Name
+			if len(name) > 30 {
+				name = name[:27] + "..."
+			}
+
+			// Format columns with fixed widths for even alignment
+			namePad := fmt.Sprintf("%-30s", name)
+			statusPad := fmt.Sprintf("%-16s", statusText)
+			progressPad := fmt.Sprintf("%-5s", progressText)
+			tablesPad := fmt.Sprintf("%-8s", tablesText)
+			elapsedPad := fmt.Sprintf("%-10s", elapsedText)
+			typePad := fmt.Sprintf("%-20s", task.MigrationType)
+
+			line := fmt.Sprintf("%s%s %s %s %s %s %s %s",
+				cursor,
+				checkbox,
+				nameStyle.Render(namePad),
+				statusStyle.Render(statusPad),
+				numberStyle.Render(progressPad),
+				numberStyle.Render(tablesPad),
+				valueStyle.Render(elapsedPad),
+				mutedTextStyle.Render(typePad))
 			sb.WriteString(line)
 			sb.WriteString("\n")
 		}
@@ -146,10 +176,10 @@ func (m Model) renderTaskDetails() string {
 
 		sb.WriteString(fmt.Sprintf("  %s %s: %s, %s: %s, %s: %s, %s: %s\n",
 			labelStyle.Render("Tables -"),
-			labelStyle.Render("Loaded"), numberStyle.Render(fmt.Sprintf("%d", stats.TablesLoaded)),
-			labelStyle.Render("Loading"), numberStyle.Render(fmt.Sprintf("%d", stats.TablesLoading)),
-			labelStyle.Render("Queued"), numberStyle.Render(fmt.Sprintf("%d", stats.TablesQueued)),
-			labelStyle.Render("Errored"), tablesErroredStyle.Render(fmt.Sprintf("%d", stats.TablesErrored))))
+			labelStyle.Render("Loaded"), numberStyle.Render(dms.FormatNumber(stats.TablesLoaded)),
+			labelStyle.Render("Loading"), numberStyle.Render(dms.FormatNumber(stats.TablesLoading)),
+			labelStyle.Render("Queued"), numberStyle.Render(dms.FormatNumber(stats.TablesQueued)),
+			labelStyle.Render("Errored"), tablesErroredStyle.Render(dms.FormatNumber(stats.TablesErrored))))
 
 		if stats.ElapsedTimeMillis > 0 {
 			sb.WriteString(fmt.Sprintf("  %s %s\n", labelStyle.Render("Elapsed:"), valueStyle.Render(dms.FormatElapsedTime(stats.ElapsedTimeMillis))))
@@ -240,11 +270,11 @@ func (m Model) renderTableStats() string {
 			sb.WriteString(fmt.Sprintf("%-15s %-15s %s %s %s %s %s %s\n",
 				valueStyle.Render(truncateString(s.SchemaName, 15)),
 				valueStyle.Render(truncateString(s.TableName, 15)),
-				numberStyle.Render(fmt.Sprintf("%-8d", s.Inserts)),
-				numberStyle.Render(fmt.Sprintf("%-8d", s.Updates)),
-				numberStyle.Render(fmt.Sprintf("%-8d", s.Deletes)),
-				numberStyle.Render(fmt.Sprintf("%-8d", s.Ddls)),
-				numberStyle.Render(fmt.Sprintf("%-8d", s.FullLoadRows)),
+				numberStyle.Render(fmt.Sprintf("%-8s", dms.FormatNumber(s.Inserts))),
+				numberStyle.Render(fmt.Sprintf("%-8s", dms.FormatNumber(s.Updates))),
+				numberStyle.Render(fmt.Sprintf("%-8s", dms.FormatNumber(s.Deletes))),
+				numberStyle.Render(fmt.Sprintf("%-8s", dms.FormatNumber(s.Ddls))),
+				numberStyle.Render(fmt.Sprintf("%-8s", dms.FormatNumber(s.FullLoadRows))),
 				stateStyle.Render(fmt.Sprintf("%-10s", s.ValidationState)),
 			))
 		}
@@ -303,7 +333,6 @@ func getTableValidationStyle(state string) lipglossStyle {
 		return statusOtherStyle
 	}
 }
-
 
 func truncateString(s string, maxLen int) string {
 	if len(s) > maxLen {
