@@ -2,6 +2,10 @@
 
 A powerful command-line tool for managing AWS Database Migration Service (DMS) replication tasks with both CLI and interactive TUI interfaces.
 
+## Changelog
+
+- See [CHANGELOG.md](CHANGELOG.md) for release notes and resolved issues.
+
 ## Features
 
 - 🚀 **Multi-interface**: Both CLI commands and interactive TUI
